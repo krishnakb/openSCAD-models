@@ -43,20 +43,32 @@ You are designing a 3D-printable model in OpenSCAD. Follow these preferences and
   - `"lid"` — lid only (STL export)
   - `"assembled"` — everything stacked as it would look in use (preview)
 
-### Friction-Fit Lids
-- Default tolerance: `lid_tol = 0.5mm` per side (FDM-safe; 0.3mm is too tight)
-- Lid top plate: full outer footprint, 2.5mm thick
-- Lip/rim: hangs down inside box, 1.5mm wall thickness, 8mm depth
-- Print orientation: top plate on bed, lip pointing up (no supports needed)
-- Round lid vertical edges with `minkowski()` + cylinder (lid is too thin for sphere rounding)
-- Add `lip_inset` (lid_wall + lid_tol) between outer walls and internal slots to prevent lid lip from colliding with contents
+### Ghost/Phantom Insert Objects
+- ALWAYS add a `ghost_contents()` module showing translucent representations of items that go inside
+- NEVER include ghost objects in exportable parts (`box_only`, `lid`, `text`) — only in preview parts (`both`, `assembled`)
+- Use `color("name", 0.4)` for 40% opacity per item type
+- Use distinct colors per category (e.g., red/green/blue/orange for card slots, purple for devices)
+- Show items at actual dimensions (no clearance) so the gap between ghost and slot walls visualizes fit
+- Include ghost contents in `"both"` and `"assembled"` views
+- This lets the user see what real life looks like before printing
 
-### Snap-Fit Locking
-- Small sphere bumps (`snap_r = 0.8mm`) on the lid lip outer face
-- Matching sphere grooves subtracted from box inner walls
-- Place on walls with solid material behind them (not where slot cutouts are)
-- Bumps positioned near the lip tip for a click at full insertion
-- The lip wall (1.5mm) provides flex for snap engagement
+### Over-Fit Lids (Preferred)
+- Default tolerance: `lid_tol = 0.5mm` per side (FDM-safe; 0.3mm is too tight)
+- Lid skirt goes OVER the box exterior, not inside
+- `lid_outer_w/y = outer_w/y + 2 * lid_tol` (inner opening matches box + gap)
+- `lid_full_w/y = lid_outer_w/y + 2 * lid_wall` (total lid footprint)
+- Top plate: full lid footprint, 2.5mm thick
+- Skirt: hollow rectangle, 1.5mm wall thickness, 8mm depth
+- Print orientation: top plate on bed, skirt pointing up (no supports needed)
+- Round lid vertical edges with `minkowski()` + cylinder
+- Grid cutouts in top plate for material savings (solid border + ribs, rectangular holes)
+- No `lip_inset` needed — skirt is exterior so it doesn't interfere with contents
+
+### Snap-Fit Locking (Over-Fit)
+- Small sphere grooves (`snap_r = 0.8mm`) subtracted from box OUTER walls
+- Matching sphere bumps on lid skirt INNER face
+- Place at Y midpoint of box, near skirt bottom (`lip_h - 2*snap_r` from top)
+- The skirt wall (1.5mm) provides flex for snap engagement
 - Bump protrusion (0.8mm) minus gap (0.5mm) = 0.3mm flex — achievable for thin PLA walls
 
 ### Text/Labels
@@ -69,11 +81,41 @@ You are designing a 3D-printable model in OpenSCAD. Follow these preferences and
 ### Tolerance Verification Checklist
 Before finalizing any design, verify:
 - [ ] All items fit with clearance (account for rounding reducing usable space at corners)
-- [ ] Lid lip does not collide with contents (lip_inset between walls and slots)
+- [ ] Over-fit lid skirt clears box exterior by `lid_tol` per side
 - [ ] Device/tall items have enough height (rounding raises effective slot floor by `rounding` mm)
 - [ ] Lid gap is exactly `lid_tol` per side on all axes
 - [ ] Snap bumps are on solid walls, not where cutouts exist
 - [ ] No zero-clearance dimensions (always add `clearance` to both width AND depth of item slots)
+- [ ] Assembled view: lid sits flush on box top, skirt hangs down, snaps align in Z/Y
+
+### Assembly Transform (Over-Fit Lid)
+The lid prints with top plate on bed, skirt up. To assemble:
+```
+translate([-(lid_tol + lid_wall), -(lid_tol + lid_wall), box_h + floor + lid_top])
+    mirror([0, 0, 1])
+        lid();
+```
+- `mirror([0,0,1])` flips skirt downward
+- X/Y offset centers lid over box (accounts for tolerance + wall overhang)
+- Z places plate bottom at box top
+
+## STL Export via CLI
+
+OpenSCAD CLI is at `/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD`. Use `-D` to override the `part` variable and `-o` for output.
+
+Export all printable parts in parallel:
+```bash
+SCAD="/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD"
+"$SCAD" -o box.stl -D 'part="box_only"' file.scad
+"$SCAD" -o lid.stl -D 'part="lid"' file.scad
+"$SCAD" -o text.stl -D 'part="text"' file.scad
+```
+
+- Export each printable piece as a separate STL (box, lid, text)
+- Use timeout of 120s — box renders can take 30-40s with minkowski
+- Verify output reports `Simple: yes` (no geometry errors)
+- Place STLs in the same directory as the .scad file
+- Always offer to export STLs when a design is finalized
 
 ## Print Guidance — Always Include at End
 
