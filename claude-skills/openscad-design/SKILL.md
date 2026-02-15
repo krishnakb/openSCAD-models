@@ -109,7 +109,7 @@ openSCAD-models/
 ├── models/
 │   ├── organizers/
 │   └── accessories/
-└── skills/
+└── claude-skills/
     ├── openscad-design/
     │   └── SKILL.md
     └── openscad-container/
@@ -120,4 +120,4 @@ openSCAD-models/
 1. Create a new folder under `models/<category>/<project-name>/`
 2. Place the `.scad` file(s) there
 3. Commit and push to the repo
-4. If any skill was updated, copy to both `~/.claude/skills/` and repo `skills/`, then commit and push
+4. If any skill was updated, copy to both `~/.claude/skills/` and repo `claude-skills/`, then commit and push
