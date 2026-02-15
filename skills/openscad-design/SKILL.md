@@ -20,56 +20,31 @@ You are designing a 3D-printable model in OpenSCAD. Follow these preferences and
 ### Filament Optimization
 - Use thinnest viable walls: 2mm outer walls, 1.5mm internal dividers
 - Minimize clearances: 1mm per slot unless the user specifies otherwise
-- Prefer orientations that remove more material from the interior (e.g., cards wide-side-down creates wider slot cutouts = less plastic)
+- Prefer orientations that remove more material from the interior
 - Raised shelves instead of full-height slots when items are shorter than the box — the un-cut material below is handled by slicer infill
-- Do NOT model grid/honeycomb patterns — let the slicer handle infill
+- Do NOT model grid/honeycomb patterns for solid walls/floors — let the slicer handle infill
+- Grid cutouts on lids/covers ARE appropriate (structural, not infill)
 
 ### Parametric Design
 - All measurements at the top of the file as named variables
-- Group parameters by section: measurements, box design, lid design, snap fit, labels, layout
+- Group parameters by section: measurements, design, layout
 - Computed values in a calculations section after parameters
-- Use `module` for each major piece (box, lid, labels, etc.)
+- Use `module` for each major piece
 
 ### Multi-Piece / Multi-Color Support
 - Add a `part` variable to select which piece to render
 - Always include: individual parts for STL export, a combined preview, and an assembled preview
 - For multi-color (AMS): separate colored elements into their own modules so they can be exported as independent STLs
-- Use `color()` for visual preview — add `box_color` and `text_color` parameters
-- For text labels: keep them in a separate `labels()` module, NOT inside the box module, so box and text can be exported independently
-- Part options pattern:
-  - `"both"` — all pieces side by side with colors (preview)
-  - `"box_only"` — box body without text (STL export)
-  - `"text"` — text only (STL export)
-  - `"lid"` — lid only (STL export)
-  - `"assembled"` — everything stacked as it would look in use (preview)
+- Use `color()` for visual preview — add color parameters
+- For text labels: keep them in a separate `labels()` module, NOT merged into other geometry
 
 ### Ghost/Phantom Insert Objects
-- ALWAYS add a `ghost_contents()` module showing translucent representations of items that go inside
-- NEVER include ghost objects in exportable parts (`box_only`, `lid`, `text`) — only in preview parts (`both`, `assembled`)
+- ALWAYS add a `ghost_contents()` module showing translucent representations of items that go inside/onto the model
+- NEVER include ghost objects in exportable parts — only in preview parts (`both`, `assembled`)
 - Use `color("name", 0.4)` for 40% opacity per item type
-- Use distinct colors per category (e.g., red/green/blue/orange for card slots, purple for devices)
-- Show items at actual dimensions (no clearance) so the gap between ghost and slot walls visualizes fit
-- Include ghost contents in `"both"` and `"assembled"` views
+- Use distinct colors per item category
+- Show items at actual dimensions (no clearance) so the gap visualizes fit
 - This lets the user see what real life looks like before printing
-
-### Over-Fit Lids (Preferred)
-- Default tolerance: `lid_tol = 0.5mm` per side (FDM-safe; 0.3mm is too tight)
-- Lid skirt goes OVER the box exterior, not inside
-- `lid_outer_w/y = outer_w/y + 2 * lid_tol` (inner opening matches box + gap)
-- `lid_full_w/y = lid_outer_w/y + 2 * lid_wall` (total lid footprint)
-- Top plate: full lid footprint, 2.5mm thick
-- Skirt: hollow rectangle, 1.5mm wall thickness, 8mm depth
-- Print orientation: top plate on bed, skirt pointing up (no supports needed)
-- Round lid vertical edges with `minkowski()` + cylinder
-- Grid cutouts in top plate for material savings (solid border + ribs, rectangular holes)
-- No `lip_inset` needed — skirt is exterior so it doesn't interfere with contents
-
-### Snap-Fit Locking (Over-Fit)
-- Small sphere grooves (`snap_r = 0.8mm`) subtracted from box OUTER walls
-- Matching sphere bumps on lid skirt INNER face
-- Place at Y midpoint of box, near skirt bottom (`lip_h - 2*snap_r` from top)
-- The skirt wall (1.5mm) provides flex for snap engagement
-- Bump protrusion (0.8mm) minus gap (0.5mm) = 0.3mm flex — achievable for thin PLA walls
 
 ### Text/Labels
 - Use `text()` with `linear_extrude()` for embossed labels
@@ -78,26 +53,10 @@ You are designing a 3D-printable model in OpenSCAD. Follow these preferences and
 - Default: `text_depth = 1mm`, `text_size = 10`
 - Text requires F6 (full render) in OpenSCAD to be visible
 
-### Tolerance Verification Checklist
-Before finalizing any design, verify:
-- [ ] All items fit with clearance (account for rounding reducing usable space at corners)
-- [ ] Over-fit lid skirt clears box exterior by `lid_tol` per side
-- [ ] Device/tall items have enough height (rounding raises effective slot floor by `rounding` mm)
-- [ ] Lid gap is exactly `lid_tol` per side on all axes
-- [ ] Snap bumps are on solid walls, not where cutouts exist
-- [ ] No zero-clearance dimensions (always add `clearance` to both width AND depth of item slots)
-- [ ] Assembled view: lid sits flush on box top, skirt hangs down, snaps align in Z/Y
-
-### Assembly Transform (Over-Fit Lid)
-The lid prints with top plate on bed, skirt up. To assemble:
-```
-translate([-(lid_tol + lid_wall), -(lid_tol + lid_wall), box_h + floor + lid_top])
-    mirror([0, 0, 1])
-        lid();
-```
-- `mirror([0,0,1])` flips skirt downward
-- X/Y offset centers lid over box (accounts for tolerance + wall overhang)
-- Z places plate bottom at box top
+### General Tolerance
+- Default tolerance for mating parts: `0.5mm` per side (FDM-safe; 0.3mm is too tight)
+- Always add `clearance` to both width AND depth of item slots
+- Account for rounding reducing usable space at corners
 
 ## STL Export via CLI
 
@@ -106,13 +65,12 @@ OpenSCAD CLI is at `/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD`.
 Export all printable parts in parallel:
 ```bash
 SCAD="/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD"
-"$SCAD" -o box.stl -D 'part="box_only"' file.scad
-"$SCAD" -o lid.stl -D 'part="lid"' file.scad
-"$SCAD" -o text.stl -D 'part="text"' file.scad
+"$SCAD" -o part1.stl -D 'part="part1"' file.scad
+"$SCAD" -o part2.stl -D 'part="part2"' file.scad
 ```
 
-- Export each printable piece as a separate STL (box, lid, text)
-- Use timeout of 120s — box renders can take 30-40s with minkowski
+- Export each printable piece as a separate STL
+- Use timeout of 120s — complex renders with minkowski can take 30-40s
 - Verify output reports `Simple: yes` (no geometry errors)
 - Place STLs in the same directory as the .scad file
 - Always offer to export STLs when a design is finalized
@@ -122,10 +80,10 @@ SCAD="/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD"
 After the design is complete, ALWAYS provide step-by-step Bambu Lab / Bambu Studio slicer guidance:
 
 ### Slicer Settings Checklist
-1. **Import STLs** — import each part separately (`box_only`, `text`, `lid`)
+1. **Import STLs** — import each part separately
 2. **Filament assignment** — assign colors per object for AMS multi-color
 3. **Supports**:
-   - Enable only if slicer flags overhangs (bridging areas like finger notches)
+   - Enable only if slicer flags overhangs
    - Type: Tree (Auto) or Paint-on (preferred — paint only where needed)
    - Support filament: PLA support filament (not dissolvable unless available)
    - Support/Raft base: regular PLA (cheaper)
@@ -150,12 +108,11 @@ All OpenSCAD models live in `git@github.com:krishnakb/openSCAD-models.git`, clon
 openSCAD-models/
 ├── models/
 │   ├── organizers/
-│   │   ├── flashcards-set-container/
-│   │   └── butterbox/
 │   └── accessories/
-│       └── vacuum-extension/
 └── skills/
-    └── openscad-design/
+    ├── openscad-design/
+    │   └── SKILL.md
+    └── openscad-container/
         └── SKILL.md
 ```
 
@@ -163,4 +120,4 @@ openSCAD-models/
 1. Create a new folder under `models/<category>/<project-name>/`
 2. Place the `.scad` file(s) there
 3. Commit and push to the repo
-4. If the skill (SKILL.md) was updated during the session, copy the updated version to both `~/.claude/skills/openscad-design/SKILL.md` and `skills/openscad-design/SKILL.md` in the repo, then commit and push
+4. If any skill was updated, copy to both `~/.claude/skills/` and repo `skills/`, then commit and push
