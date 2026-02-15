@@ -4,7 +4,7 @@ card_h = 90;
 total_card_thick = 37;
 num_categories = 4;
 
-dev_w = 105.5;
+dev_w = 110;
 dev_thick = 25;
 dev_h = 92;
 
