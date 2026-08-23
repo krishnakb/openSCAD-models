@@ -104,13 +104,19 @@ module mount() {
     }
 }
 
-// Translucent wheels resting in the troughs (preview only, never exported).
+// Translucent wheels HANGING from the troughs (preview only, never exported).
+// Groove catches the tire near the top of the wheel; wheel dangles below.
 module ghost_contents() {
-    color("dimgray", 0.30)
     for (cy = [back_ch_y, front_ch_y])
-        translate([cx, cy, block_z0 + trough_z + wheel_r])
-            rotate([90, 0, 0])
-                cylinder(d = wheel_diameter, h = tire_width, center = true, $fn = 90);
+        translate([cx, cy, block_z0 + trough_z - wheel_r]) {
+            color("dimgray", 0.22)                       // wheel body
+                rotate([90, 0, 0])
+                    cylinder(d = wheel_diameter - tire_width, h = 2, center = true, $fn = 90);
+            color("black", 0.30)                         // tire (wheel plane = X-Z)
+                rotate([90, 0, 0]) rotate_extrude($fn = 90)
+                    translate([wheel_r - tire_r, 0, 0])
+                        circle(r = tire_r, $fn = 24);
+        }
 }
 
 /* ============================================================
