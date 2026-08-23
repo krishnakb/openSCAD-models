@@ -15,7 +15,6 @@ wheel_diameter = 700;   // ~700c wheel (ghost preview only)
 
 /* ---------- Fin (the load-bearing blade) ---------- */
 fin_t       = 14;    // fin thickness
-fin_chamfer = 1.5;   // bevel on the fin side edges
 fin_depth   = 150;   // how far it projects from the wall (Y)
 top_back_z  = 66;    // top edge height at the wall
 top_front_z = 104;   // top edge height at the tip (tall outer lip)
@@ -36,8 +35,9 @@ screw_x       = 18;              // holes sit either side of the fin
 screw_z       = [12, 105];
 
 /* ---------- Logo (recessed into backplate front) ---------- */
-logo_svg   = "";      // path to official SVG; "" -> bold "ROSE" text fallback
-logo_size  = 12;      // text size (fallback) / SVG scale
+logo_svg   = "rose-logo.svg";  // official SVG path; "" -> bold "ROSE" text fallback
+logo_width = 42;      // SVG scaled to this width (mm), aspect preserved
+logo_size  = 12;      // text size (used only for the text fallback)
 logo_depth = 1.2;     // recess depth
 logo_z     = 85;      // height up the backplate
 
@@ -68,22 +68,9 @@ module notch(ny) {
     translate([ny, top_z(ny)]) circle(r = notch_r, $fn = 48);
 }
 
-// Extrude a 2D profile with beveled top/bottom edges.
-module chamfered_extrude(h, c) {
-    hull() {
-        linear_extrude(0.01) offset(delta = -c) children();
-        translate([0, 0, c]) linear_extrude(0.01) children();
-    }
-    translate([0, 0, c]) linear_extrude(h - 2 * c) children();
-    hull() {
-        translate([0, 0, h - c]) linear_extrude(0.01) children();
-        translate([0, 0, h - 0.01]) linear_extrude(0.01) offset(delta = -c) children();
-    }
-}
-
 module fin() {
     translate([-fin_t / 2, 0, 0]) rotate([90, 0, 90])
-        chamfered_extrude(fin_t, fin_chamfer)
+        linear_extrude(fin_t)
             difference() {
                 fin_outline();
                 notch(notch_near_y);
@@ -108,14 +95,14 @@ module screw(x, z) {
                  h = (screw_head_d - screw_shaft_d) / 2, $fn = 30);
 }
 
-// 2D logo artwork: official SVG if supplied, else bold "ROSE".
+// 2D logo artwork: official SVG scaled to logo_width, else bold "ROSE".
 module logo_shape() {
     if (logo_svg == "")
         text("ROSE", size = logo_size, halign = "center", valign = "center",
              font = "Liberation Sans:style=Bold", $fn = 40);
     else
-        // SVG y-axis is flipped vs OpenSCAD; mirror so it reads upright.
-        mirror([0, 1, 0]) import(file = logo_svg, center = true);
+        resize([logo_width, 0, 0], auto = true)
+            import(file = logo_svg, center = true);
 }
 
 // Logo geometry positioned to cut into the +Y (room-facing) plate face.
