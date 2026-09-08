@@ -16,8 +16,10 @@
 part = "both";   // "clamp" = printable STL, "both"/"assembled" = preview w/ ghost roll
 
 /* ---------- Measurements (mm) ---------- */
-roll_od = 260;   // outside diameter of the rolled-up mat
-core_id = 110;   // diameter of the hollow core down the middle
+// wall_t is the dimension that sets the clamp; roll_od only sets how
+// tightly the legs curve, which soft foam forgives.
+wall_t  = 52;    // core surface -> outside, read across the end face
+roll_od = 250;   // outside diameter = tape circumference / 3.1416
 
 /* ---------- Clamp ---------- */
 squeeze   = 3;    // radial bite into the foam, per leg
@@ -35,9 +37,8 @@ ridge_z0    = 20;   // first ridge, measured from the bed
 ridge_pitch = 12;
 
 /* ---------- Pull slot (finger hook / lanyard point) ---------- */
-slot_w  = 10;
-slot_r0 = 78;
-slot_r1 = 112;
+slot_w      = 10;
+slot_margin = 12;   // keeps the slot clear of both leg roots
 
 /* ---------- Design ---------- */
 rounding      = 2;   // radius on every convex edge
@@ -47,8 +48,8 @@ corner_fillet = 6;   // gussets at the bridge-to-leg junctions
 ghost_roll_len = 300;  // shortened stand-in for the full-length roll
 
 /* ---------- Calculations ---------- */
-r_core   = core_id / 2;
 r_out    = roll_od / 2;
+r_core   = r_out - wall_t;
 
 ri_face  = r_core + squeeze;      // inner leg gripping face
 ri_back  = ri_face - leg_t;       // inner leg back, sits inside the core
@@ -59,6 +60,9 @@ leg_top  = bridge_t + leg_h;
 flare_z  = leg_top - lead_in;
 ri_tip   = ri_face - lead_flare;
 ro_tip   = ro_face + lead_flare;
+
+slot_r0  = ri_face + slot_margin;
+slot_r1  = ro_face - slot_margin;
 
 /* ============================================================
    2D profile, swept about the roll axis
