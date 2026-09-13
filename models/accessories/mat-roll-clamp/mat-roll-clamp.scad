@@ -8,6 +8,10 @@
    layer -- including the loose outer tail -- is pinned at once.
    Print TWO, one for each end of the roll.
 
+   Sized for PLA: the legs are held permanently splayed, so they are
+   thickened to keep sustained root stress near 5% of yield, well
+   under where PLA creeps. Store indoors -- PLA softens near 60C.
+
    Modelled in print orientation: bridge flat on the bed, legs
    pointing up, no supports. In use the clamp sits over the roll
    with the legs pointing down.
@@ -23,7 +27,7 @@ roll_od = 250;   // outside diameter = tape circumference / 3.1416
 
 /* ---------- Clamp ---------- */
 squeeze   = 3;    // radial bite into the foam, per leg
-leg_t     = 7;    // leg thickness
+leg_t     = 10;   // leg thickness; sized so PLA stays ~5% of yield (creep)
 leg_h     = 55;   // how far the legs reach along the roll
 bridge_t  = 8;    // bridge thickness (spans the end face)
 arc       = 30;   // angular width of the clamp, degrees
@@ -42,7 +46,7 @@ slot_margin = 12;   // keeps the slot clear of both leg roots
 
 /* ---------- Design ---------- */
 rounding      = 2;   // radius on every convex edge
-corner_fillet = 6;   // gussets at the bridge-to-leg junctions
+corner_fillet = 10;  // gussets at the bridge-to-leg junctions
 
 /* ---------- Preview ---------- */
 ghost_roll_len = 300;  // shortened stand-in for the full-length roll
